@@ -874,6 +874,29 @@
                 if (!leftTalent && !rightTalent) {
                     tracksHTML = '<div class="error">No track information found in TXT file.</div>';
                 }
+                
+                // Add session type information from filename ONLY if no JSON file is loaded
+                if (!jsonData) {
+                    const sessionTypeMatch = txtFileName.match(/(t\d+lt\d+r)/i);
+                    if (sessionTypeMatch) {
+                        const sessionType = sessionTypeMatch[1].toLowerCase();
+                        const sessionDescription = sessionType === 't1lt2r' 
+                            ? 'Left track has 1st turn, Right track has 2nd turn'
+                            : 'Left track has 2nd turn, Right track has 1st turn';
+                        
+                        tracksHTML += `
+                            <div class="talent-card" style="background: rgba(249, 115, 22, 0.15); border-left: 4px solid rgba(249, 115, 22, 0.6);">
+                                <div class="talent-row">
+                                    <div class="talent-label">Session Type:</div>
+                                    <span class="talent-formatted" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.9) 0%, rgba(234, 88, 12, 0.9) 100%); color: white; padding: 8px 20px; border-radius: 10px; font-weight: 700; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);">${sessionType}</span>
+                                </div>
+                                <div class="talent-row" style="margin-top: 10px;">
+                                    <div class="talent-detail">${sessionDescription}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
 
                 document.getElementById('tracksList').innerHTML = tracksHTML;
                 
