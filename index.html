@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danny Beta JSON-ProTools QC Checker v1.0.1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #f5f7fa 0%, #e8ecf1 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.2em;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        
+        .version-badge {
+            display: inline-block;
+            background: #4b5563;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.4em;
+            font-weight: 700;
+            margin-left: 12px;
+            vertical-align: middle;
+        }
+        
+        .phase-indicator {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .comparison-results {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+        
+        .comparison-results h2 {
+            color: #1a202c;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+        
+        .comparison-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 15px;
+            border-left: 4px solid rgba(200, 200, 200, 0.3);
+        }
+        
+        .comparison-card.match {
+            border-left: 4px solid rgba(16, 185, 129, 0.8);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .comparison-card.no-match {
+            border-left: 4px solid rgba(239, 68, 68, 0.8);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        
+        .status-badge.success {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            border: 2px solid transparent;
+        }
+        
+        .status-badge.error {
+            background: white;
+            color: #dc2626;
+            border: 1.5px solid #dc2626;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+            font-weight: 700;
+        }
+        
+        .status-badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .drop-zone {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        
+        .drop-zone:hover {
+            border-color: #3182ce;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .drop-zone.dragover {
+            background: #f7fafc;
+            border-color: #3182ce;
+            border-style: solid;
+        }
+        
+        .drop-zone.loaded {
+            border-color: #38a169;
+            background: #f0fff4;
+        }
+        
+        .drop-zone h2 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .drop-zone p {
+            color: #718096;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+        
+        .file-info {
+            color: #38a169;
+            font-weight: 600;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .results-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .results-panel h2 {
+            color: #1a202c;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+        
+        .talent-card {
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            border-left: 4px solid rgba(139, 92, 246, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .talent-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+        
+        .talent-label {
+            font-weight: 600;
+            color: #2d3748;
+            min-width: 100px;
+        }
+        
+        .talent-formatted {
+            display: inline;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-size: 1.1em;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .talent-detail {
+            color: #4a5568;
+            font-size: 0.95em;
+        }
+        
+        .first-turn-badge {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .error {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .debug-box {
+            background: #fff3cd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 2px solid #ffc107;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Danny Beta JSON-ProTools QC Checker ✅ <span class="version-badge">v1.0.1</span></h1>
+        
+        <div class="upload-section">
+            <div class="drop-zone" id="mainZone">
+                <h2>📄 Drop Both Files Here</h2>
+                <p>Drag and drop your JSON and TXT files here<br>or click to select files</p>
+                <div class="file-info" id="jsonInfo"></div>
+                <div class="file-info" id="txtInfo"></div>
+                <input type="file" id="fileInput" accept=".json,.txt" multiple style="display: none;">
+            </div>
+        </div>
+        
+        <div class="results hidden" id="results">
+            <div class="results-panel">
+                <h2>📊 JSON Script</h2>
+                <div id="talentsList"></div>
+            </div>
+            
+            <div class="results-panel">
+                <h2>🎵 ProTools Tracks</h2>
+                <div id="tracksList"></div>
+            </div>
+        </div>
+        
+        <div class="comparison-results hidden" id="comparisonResults">
+            <h2>🔍 Comparison Results</h2>
+            <div id="comparisonContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let jsonData = null;
+        let txtData = null;
+        let txtFileName = '';
+        let jsonFirstSpeaker = '';
+        let protoolsFirstSpeaker = '';
+        let jsonTalent1Name = '';
+        let jsonTalent2Name = '';
+        let protoolsLeftName = '';
+        let protoolsRightName = '';
+
+        setupDropZone('mainZone', 'fileInput', handleFiles);
+
+        function setupDropZone(zoneId, inputId, handler) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            
+            zone.addEventListener('click', () => input.click());
+            
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+            
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) handler(files);
+            });
+            
+            input.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files.length > 0) handler(files);
+            });
+        }
+
+        function handleFiles(files) {
+            // Check which file types are being uploaded
+            let hasJson = false;
+            let hasTxt = false;
+            
+            for (let file of files) {
+                const fileName = file.name.toLowerCase();
+                if (fileName.endsWith('.json')) hasJson = true;
+                if (fileName.endsWith('.txt')) hasTxt = true;
+            }
+            
+            // Reset the phase that's not being uploaded
+            if (hasJson && !hasTxt) {
+                // Only JSON uploaded, reset TXT
+                txtData = null;
+                txtFileName = '';
+                protoolsFirstSpeaker = '';
+                document.getElementById('txtInfo').textContent = '';
+                document.getElementById('tracksList').innerHTML = '';
+                document.getElementById('comparisonResults').classList.add('hidden');
+            }
+            
+            if (hasTxt && !hasJson) {
+                // Only TXT uploaded, reset JSON
+                jsonData = null;
+                jsonFirstSpeaker = '';
+                document.getElementById('jsonInfo').textContent = '';
+                document.getElementById('talentsList').innerHTML = '';
+                document.getElementById('comparisonResults').classList.add('hidden');
+            }
+            
+            // Process the files
+            for (let file of files) {
+                const fileName = file.name.toLowerCase();
+                if (fileName.endsWith('.json')) {
+                    handleJsonFile(file);
+                } else if (fileName.endsWith('.txt')) {
+                    handleTxtFile(file);
+                }
+            }
+        }
+
+        function handleJsonFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    jsonData = JSON.parse(e.target.result);
+                    document.getElementById('jsonInfo').textContent = `✓ JSON: ${file.name}`;
+                    document.getElementById('mainZone').classList.add('loaded');
+                    extractTalents();
+                } catch (error) {
+                    alert('Error parsing JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function handleTxtFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                txtData = e.target.result;
+                txtFileName = file.name;
+                document.getElementById('txtInfo').textContent = `✓ TXT: ${file.name}`;
+                document.getElementById('mainZone').classList.add('loaded');
+                extractProToolsTracks();
+            };
+            reader.readAsText(file);
+        }
+
+        function formatTalentName(fullName) {
+            if (!fullName || typeof fullName !== 'string') return '';
+            
+            const nameParts = fullName.trim().split(' ').filter(part => part.length > 0);
+            
+            if (nameParts.length < 2) {
+                return '';
+            }
+            
+            const firstName = nameParts[0];
+            const lastName = nameParts[nameParts.length - 1];
+            
+            const firstInitial = firstName.charAt(0).toLowerCase();
+            const lastNamePart = lastName.substring(0, 3).toLowerCase();
+            
+            return firstInitial + lastNamePart;
+        }
+
+        function extractTalents() {
+            if (!jsonData) return;
+
+            document.getElementById('results').classList.remove('hidden');
+
+            try {
+                const voiceAttributes = jsonData[0]?.voice_attributes || [];
+                const scenes = jsonData[1]?.scenes || [];
+                
+                if (voiceAttributes.length === 0) {
+                    document.getElementById('talentsList').innerHTML = '<div class="error">No talent data found in JSON file.</div>';
+                    return;
+                }
+
+                // Find who speaks first
+                let firstSpeaker = '';
+                
+                if (scenes.length > 0) {
+                    const firstScene = scenes[0];
+                    const turns = firstScene.turns || [];
+                    
+                    if (turns.length > 0) {
+                        firstSpeaker = turns[0].talent;
+                        jsonFirstSpeaker = firstSpeaker;
+                    }
+                }
+
+                let talentsHTML = '';
+
+                voiceAttributes.forEach(talentObj => {
+                    const talentKey = talentObj.key;
+                    const attributes = talentObj.value || [];
+                    
+                    let name = '';
+                    let gender = '';
+                    
+                    attributes.forEach(attr => {
+                        if (attr.key === 'name') {
+                            name = attr.value;
+                        } else if (attr.key === 'gender') {
+                            gender = attr.value;
+                        }
+                    });
+
+                    const formattedName = formatTalentName(name);
+                    
+                    // Store formatted names for comparison
+                    if (talentKey === 'Talent1') {
+                        jsonTalent1Name = formattedName;
+                    } else if (talentKey === 'Talent2') {
+                        jsonTalent2Name = formattedName;
+                    }
+                    
+                    const genderSimple = gender.toLowerCase().includes('woman') || gender.toLowerCase().includes('female') ? 'Female' : 
+                                       gender.toLowerCase().includes('man') || gender.toLowerCase().includes('male') ? 'Male' : gender;
+
+                    const isFirstSpeaker = talentKey === firstSpeaker;
+
+                    talentsHTML += `
+                        <div class="talent-card" id="json-${talentKey.toLowerCase()}">
+                            <div class="talent-row">
+                                <div class="talent-label">${talentKey}:</div>
+                                <span class="talent-formatted" id="json-name-${talentKey.toLowerCase()}">${formattedName}</span>
+                                ${isFirstSpeaker ? '<span class="first-turn-badge">First Turn</span>' : ''}
+                            </div>
+                            <div class="talent-row">
+                                <div class="talent-label">Name:</div>
+                                <div class="talent-detail">${name} (${genderSimple})</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('talentsList').innerHTML = talentsHTML;
+                
+                // Run comparison if both files loaded
+                if (jsonData && txtData) {
+                    compareResults();
+                }
+
+            } catch (error) {
+                document.getElementById('talentsList').innerHTML = `<div class="error">Error processing JSON: ${error.message}</div>`;
+            }
+        }
+
+        function extractProToolsTracks() {
+            if (!txtData) return;
+
+            document.getElementById('results').classList.remove('hidden');
+
+            try {
+                const lines = txtData.split('\n');
+                let leftTrack = '';
+                let rightTrack = '';
+                let leftTalent = '';
+                let rightTalent = '';
+                let leftFullName = '';
+                let rightFullName = '';
+                let firstSpeakerTrack = ''; // Will be 'Left' or 'Right'
+
+                // Find lines with track names
+                for (let line of lines) {
+                    if (line.includes('Left_Talent')) {
+                        leftTrack = line.split('\t').find(part => part.includes('Left_Talent')) || '';
+                        // Extract talent code - match pattern like "enusslgflo" and take last 4 chars
+                        const match = leftTrack.match(/[a-z]{10,}/i);
+                        if (match) {
+                            leftFullName = match[0].toLowerCase();
+                            leftTalent = leftFullName.slice(-4); // Get last 4 characters
+                        }
+                    }
+                    if (line.includes('Right_Talent')) {
+                        rightTrack = line.split('\t').find(part => part.includes('Right_Talent')) || '';
+                        // Extract talent code - match pattern like "enussllrue" and take last 4 chars
+                        const match = rightTrack.match(/[a-z]{10,}/i);
+                        if (match) {
+                            rightFullName = match[0].toLowerCase();
+                            rightTalent = rightFullName.slice(-4); // Get last 4 characters
+                        }
+                    }
+                    
+                    // Find line0001 marker and check which track it belongs to
+                    if (line.includes('line0001')) {
+                        if (line.includes('Left_Talent')) {
+                            firstSpeakerTrack = 'Left';
+                            protoolsFirstSpeaker = 'Left';
+                        } else if (line.includes('Right_Talent')) {
+                            firstSpeakerTrack = 'Right';
+                            protoolsFirstSpeaker = 'Right';
+                        }
+                    }
+                    
+                    // Stop once we have all info
+                    if (leftTalent && rightTalent && firstSpeakerTrack) break;
+                }
+
+                let tracksHTML = '';
+                
+                if (leftTalent) {
+                    protoolsLeftName = leftTalent;
+                    const isFirstSpeaker = firstSpeakerTrack === 'Left';
+                    tracksHTML += `
+                        <div class="talent-card" id="protools-left">
+                            <div class="talent-row">
+                                <div class="talent-label">Left Track:</div>
+                                <span class="talent-formatted" id="protools-name-left">${leftTalent}</span>
+                                ${isFirstSpeaker ? '<span class="first-turn-badge">First Turn</span>' : ''}
+                            </div>
+                            ${leftFullName ? `
+                            <div class="talent-row">
+                                <div class="talent-label">Speaker ID:</div>
+                                <div class="talent-detail">${leftFullName}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+                
+                if (rightTalent) {
+                    protoolsRightName = rightTalent;
+                    const isFirstSpeaker = firstSpeakerTrack === 'Right';
+                    tracksHTML += `
+                        <div class="talent-card" id="protools-right">
+                            <div class="talent-row">
+                                <div class="talent-label">Right Track:</div>
+                                <span class="talent-formatted" id="protools-name-right">${rightTalent}</span>
+                                ${isFirstSpeaker ? '<span class="first-turn-badge">First Turn</span>' : ''}
+                            </div>
+                            ${rightFullName ? `
+                            <div class="talent-row">
+                                <div class="talent-label">Speaker ID:</div>
+                                <div class="talent-detail">${rightFullName}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                if (!leftTalent && !rightTalent) {
+                    tracksHTML = '<div class="error">No track information found in TXT file.</div>';
+                }
+
+                document.getElementById('tracksList').innerHTML = tracksHTML;
+                
+                // Run comparison if both files loaded
+                if (jsonData && txtData) {
+                    compareResults();
+                    // Draw connection arrows after a short delay to ensure DOM is ready
+                    setTimeout(drawConnectionArrows, 100);
+                }
+
+            } catch (error) {
+                document.getElementById('tracksList').innerHTML = `<div class="error">Error processing TXT: ${error.message}</div>`;
+            }
+        }
+        
+        function compareResults() {
+            if (!jsonData || !txtData || !jsonTalent1Name || !jsonTalent2Name || !protoolsLeftName || !protoolsRightName) return;
+            
+            document.getElementById('comparisonResults').classList.remove('hidden');
+            
+            try {
+                // Extract session configuration from filename (e.g., t1lt2r or t2lt1r)
+                const configMatch = txtFileName.match(/(t\d+lt\d+r)/i);
+                const sessionConfig = configMatch ? configMatch[1].toLowerCase() : 'unknown';
+                
+                // Determine expected configuration from filename
+                let configDescription = '';
+                let expectedFirstSpeaker = '';
+                
+                if (sessionConfig === 't1lt2r') {
+                    configDescription = 'Talent1 on Left (First Turn), Talent2 on Right';
+                    expectedFirstSpeaker = 'Talent1';
+                } else if (sessionConfig === 't2lt1r') {
+                    configDescription = 'Talent2 on Left, Talent1 on Right (First Turn)';
+                    expectedFirstSpeaker = 'Talent2';
+                } else {
+                    configDescription = 'Unknown configuration';
+                }
+                
+                // TALENT NAMES MATCH: Check alphabetical order
+                // Determine which talent should be on left based on alphabetical order
+                const talent1First = jsonTalent1Name.localeCompare(jsonTalent2Name) < 0;
+                
+                let namesMatch = false;
+                let nameMatchDetail = '';
+                
+                if (talent1First) {
+                    // Talent1 is alphabetically first, should be on Left
+                    namesMatch = (jsonTalent1Name === protoolsLeftName && jsonTalent2Name === protoolsRightName);
+                    nameMatchDetail = `Talent1 (${jsonTalent1Name}) is alphabetically first, should be Left. Talent2 (${jsonTalent2Name}) should be Right.`;
+                } else {
+                    // Talent2 is alphabetically first, should be on Left
+                    namesMatch = (jsonTalent2Name === protoolsLeftName && jsonTalent1Name === protoolsRightName);
+                    nameMatchDetail = `Talent2 (${jsonTalent2Name}) is alphabetically first, should be Left. Talent1 (${jsonTalent1Name}) should be Right.`;
+                }
+                
+                // FIRST SENTENCE MATCH: Check if first speaker matches
+                // Determine which talent has first sentence in JSON
+                let jsonFirstTalent = '';
+                if (jsonFirstSpeaker === 'Talent1') {
+                    jsonFirstTalent = 'Talent1';
+                } else if (jsonFirstSpeaker === 'Talent2') {
+                    jsonFirstTalent = 'Talent2';
+                }
+                
+                // Determine which talent is on the ProTools first speaker track
+                let protoolsFirstTalent = '';
+                if (protoolsFirstSpeaker === 'Left') {
+                    // Left track has first sentence - which talent is on left?
+                    if (jsonTalent1Name === protoolsLeftName) {
+                        protoolsFirstTalent = 'Talent1';
+                    } else if (jsonTalent2Name === protoolsLeftName) {
+                        protoolsFirstTalent = 'Talent2';
+                    }
+                } else if (protoolsFirstSpeaker === 'Right') {
+                    // Right track has first sentence - which talent is on right?
+                    if (jsonTalent1Name === protoolsRightName) {
+                        protoolsFirstTalent = 'Talent1';
+                    } else if (jsonTalent2Name === protoolsRightName) {
+                        protoolsFirstTalent = 'Talent2';
+                    }
+                }
+                
+                const firstSentenceMatch = jsonFirstTalent === protoolsFirstTalent;
+                
+                // SESSION TYPE MATCH: Check if actual ProTools configuration matches filename
+                // t1lt2r means: Track LEFT has 1st turn, Track RIGHT has 2nd turn
+                // t2lt1r means: Track LEFT has 2nd turn, Track RIGHT has 1st turn
+                let actualSessionType = '';
+                if (protoolsFirstSpeaker === 'Left') {
+                    actualSessionType = 't1lt2r';  // Left track has first turn
+                } else if (protoolsFirstSpeaker === 'Right') {
+                    actualSessionType = 't2lt1r';  // Right track has first turn (so left has 2nd)
+                }
+                
+                const sessionTypeMatch = actualSessionType === sessionConfig;
+                
+                let comparisonHTML = `
+                    <div class="comparison-card ${namesMatch ? 'match' : 'no-match'}">
+                        <div class="talent-row">
+                            <div class="talent-label">Talent Names Match:</div>
+                            <span class="status-badge ${namesMatch ? 'success' : 'error'}">
+                                ${namesMatch ? '✅ MATCH' : '❌ NO MATCH'}
+                            </span>
+                        </div>
+                        <div class="talent-row" style="margin-top: 10px;">
+                            <div class="talent-detail">
+                                ${nameMatchDetail}<br>
+                                ProTools: Left=${protoolsLeftName}, Right=${protoolsRightName}
+                                ${namesMatch ? ' ✓ Correct placement' : ' ✗ Incorrect placement'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-card ${firstSentenceMatch ? 'match' : 'no-match'}">
+                        <div class="talent-row">
+                            <div class="talent-label">First Turn Match:</div>
+                            <span class="status-badge ${firstSentenceMatch ? 'success' : 'error'}">
+                                ${firstSentenceMatch ? '✅ MATCH' : '❌ NO MATCH'}
+                            </span>
+                        </div>
+                        <div class="talent-row" style="margin-top: 10px;">
+                            <div class="talent-detail">
+                                JSON: ${jsonFirstTalent} has first turn | 
+                                ProTools: ${protoolsFirstTalent} has first turn (${protoolsFirstSpeaker} track)
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-card session-type ${sessionTypeMatch ? 'match' : 'no-match'}">
+                        <div class="talent-row">
+                            <div class="talent-label">ProTools Session Type:</div>
+                            <span class="talent-formatted" id="session-type-box">${sessionConfig}</span>
+                            <span class="status-badge ${sessionTypeMatch ? 'success' : 'error'}">
+                                ${sessionTypeMatch ? '✓ MATCH' : '✗ NO MATCH'}
+                            </span>
+                        </div>
+                        <div class="talent-row" style="margin-top: 10px;">
+                            <div class="talent-detail">
+                                ${protoolsFirstSpeaker} track has First Turn so filename should have ${actualSessionType}.
+                                ${sessionTypeMatch ? ' ✓ Filename is correct' : ` ✗ Filename has ${sessionConfig} (incorrect)`}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('comparisonContent').innerHTML = comparisonHTML;
+                
+                // Style the ProTools Session Type box orange
+                setTimeout(() => {
+                    const sessionBox = document.getElementById('session-type-box');
+                    if (sessionBox) {
+                        sessionBox.style.background = 'linear-gradient(135deg, rgba(249, 115, 22, 0.9) 0%, rgba(234, 88, 12, 0.9) 100%)';
+                        sessionBox.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                    }
+                    
+                    // Update First Turn badge colors based on match
+                    const allBadges = document.querySelectorAll('.first-turn-badge');
+                    if (firstSentenceMatch) {
+                        // Turn all "First Turn" badges green when they match
+                        allBadges.forEach(badge => {
+                            badge.style.background = 'rgba(16, 185, 129, 0.9)';
+                            badge.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+                        });
+                    } else {
+                        // Turn all "First Turn" badges red when they don't match
+                        allBadges.forEach(badge => {
+                            badge.style.background = 'rgba(239, 68, 68, 0.9)';
+                            badge.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
+                        });
+                    }
+                }, 50);
+                
+            } catch (error) {
+                document.getElementById('comparisonContent').innerHTML = `<div class="error">Error comparing results: ${error.message}</div>`;
+            }
+        }
+        
+        function drawConnectionArrows() {
+            if (!jsonTalent1Name || !jsonTalent2Name || !protoolsLeftName || !protoolsRightName) return;
+            
+            // Determine connections based on name matching with color coding
+            const connections = [];
+            
+            // Talent1 connections - Blue
+            if (jsonTalent1Name === protoolsLeftName) {
+                connections.push({ from: 'json-name-talent1', to: 'protools-name-left', jsonTalent: 'talent1', protoolsTrack: 'left' });
+            } else if (jsonTalent1Name === protoolsRightName) {
+                connections.push({ from: 'json-name-talent1', to: 'protools-name-right', jsonTalent: 'talent1', protoolsTrack: 'right' });
+            }
+            
+            // Talent2 connections - Purple
+            if (jsonTalent2Name === protoolsLeftName) {
+                connections.push({ from: 'json-name-talent2', to: 'protools-name-left', jsonTalent: 'talent2', protoolsTrack: 'left' });
+            } else if (jsonTalent2Name === protoolsRightName) {
+                connections.push({ from: 'json-name-talent2', to: 'protools-name-right', jsonTalent: 'talent2', protoolsTrack: 'right' });
+            }
+            
+            // Update box colors to match connections
+            connections.forEach(conn => {
+                const jsonBox = document.getElementById(conn.from);
+                const protoolsBox = document.getElementById(conn.to);
+                
+                if (jsonBox) {
+                    if (conn.jsonTalent === 'talent1') {
+                        jsonBox.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)';
+                        jsonBox.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+                    } else {
+                        jsonBox.style.background = 'linear-gradient(135deg, rgba(168, 85, 247, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)';
+                        jsonBox.style.boxShadow = '0 4px 12px rgba(168, 85, 247, 0.3)';
+                    }
+                }
+                
+                if (protoolsBox) {
+                    if (conn.jsonTalent === 'talent1') {
+                        protoolsBox.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)';
+                        protoolsBox.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+                    } else {
+                        protoolsBox.style.background = 'linear-gradient(135deg, rgba(168, 85, 247, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)';
+                        protoolsBox.style.boxShadow = '0 4px 12px rgba(168, 85, 247, 0.3)';
+                    }
+                }
+            });
+        }
+        
+        // Redraw colors on window resize
+        window.addEventListener('resize', () => {
+            if (jsonData && txtData) {
+                setTimeout(drawConnectionArrows, 100);
+            }
+        });
+    </script>
+</body>
+</html>
