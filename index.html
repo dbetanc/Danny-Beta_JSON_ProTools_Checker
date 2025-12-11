@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danny Beta JSON-ProTools QC Checker v1.0.1</title>
+    <title>Danny Beta JSON-ProTools QC Checker v1.0.2</title>
     <style>
         * {
             margin: 0;
@@ -290,20 +290,178 @@
             border: 2px solid #ffc107;
             font-size: 0.9em;
         }
+        
+        /* Batch Results Styles */
+        .batch-results {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+        
+        .batch-results h2 {
+            color: #1a202c;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+        
+        .batch-summary {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .batch-summary-stats {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .batch-stat {
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .batch-stat.pass {
+            color: #10b981;
+        }
+        
+        .batch-stat.fail {
+            color: #ef4444;
+        }
+        
+        .batch-table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .batch-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .batch-table thead {
+            background: #f3f4f6;
+        }
+        
+        .batch-table th {
+            padding: 15px;
+            text-align: center;
+            font-weight: 700;
+            color: #1a202c;
+            border-bottom: 2px solid #e5e7eb;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .batch-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #4a5568;
+            font-size: 0.85em;
+            text-align: center;
+        }
+        
+        .batch-table tbody tr:hover {
+            background: #f9fafb;
+        }
+        
+        .batch-table tbody tr.clickable-row {
+            cursor: pointer;
+        }
+        
+        .batch-table tbody tr.clickable-row:hover {
+            background: #eff6ff;
+        }
+        
+        .batch-status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85em;
+            text-transform: uppercase;
+        }
+        
+        .batch-status-badge.pass {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .batch-status-badge.fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .batch-status-badge.partial {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .session-name {
+            font-weight: 600;
+            color: #2563eb;
+            font-size: 21px !important;
+            text-align: left;
+        }
+        
+        /* Back Button Styles */
+        .back-button-container {
+            margin-bottom: 20px;
+        }
+        
+        .back-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+        
+        .back-btn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Danny Beta JSON-ProTools QC Checker ✅ <span class="version-badge">v1.0.1</span></h1>
+        <h1>Danny Beta JSON-ProTools QC Checker ✅ <span class="version-badge">v1.0.2</span></h1>
         
         <div class="upload-section">
             <div class="drop-zone" id="mainZone">
-                <h2>📄 Drop Both Files Here</h2>
-                <p>Drag and drop your JSON and TXT files here<br>or click to select files</p>
+                <h2>📄 Drop Files or Folder Here</h2>
+                <p>Drag and drop your JSON and TXT files, or an entire folder<br>Click to select individual files</p>
                 <div class="file-info" id="jsonInfo"></div>
                 <div class="file-info" id="txtInfo"></div>
                 <input type="file" id="fileInput" accept=".json,.txt" multiple style="display: none;">
             </div>
+        </div>
+        
+        <!-- Back to Batch Button -->
+        <div class="back-button-container hidden" id="backButton">
+            <button onclick="backToBatchResults()" class="back-btn">← Back to Batch Results</button>
         </div>
         
         <div class="results hidden" id="results">
@@ -322,6 +480,26 @@
             <h2>🔍 Comparison Results</h2>
             <div id="comparisonContent"></div>
         </div>
+        
+        <!-- Batch Processing Results -->
+        <div class="batch-results hidden" id="batchResults">
+            <h2>📊 Batch Processing Results</h2>
+            <div class="batch-summary" id="batchSummary"></div>
+            <div class="batch-table-container">
+                <table class="batch-table" id="batchTable">
+                    <thead>
+                        <tr>
+                            <th>Full Session Name</th>
+                            <th>Talent<br>Names<br>Match</th>
+                            <th>First<br>Turn<br>Match</th>
+                            <th>Session<br>Type<br>Match</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batchTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -334,6 +512,44 @@
         let jsonTalent2Name = '';
         let protoolsLeftName = '';
         let protoolsRightName = '';
+        
+        // Store batch session data for detailed view
+        let batchSessionData = {};
+
+        // Helper function to recursively get all files from folder drops
+        async function getAllFiles(dataTransferItems) {
+            const files = [];
+            
+            async function traverseFileTree(item, path = '') {
+                if (item.isFile) {
+                    return new Promise((resolve) => {
+                        item.file((file) => {
+                            files.push(file);
+                            resolve();
+                        });
+                    });
+                } else if (item.isDirectory) {
+                    const dirReader = item.createReader();
+                    return new Promise((resolve) => {
+                        dirReader.readEntries(async (entries) => {
+                            for (const entry of entries) {
+                                await traverseFileTree(entry, path + item.name + '/');
+                            }
+                            resolve();
+                        });
+                    });
+                }
+            }
+            
+            for (let i = 0; i < dataTransferItems.length; i++) {
+                const item = dataTransferItems[i].webkitGetAsEntry();
+                if (item) {
+                    await traverseFileTree(item);
+                }
+            }
+            
+            return files;
+        }
 
         setupDropZone('mainZone', 'fileInput', handleFiles);
 
@@ -352,11 +568,19 @@
                 zone.classList.remove('dragover');
             });
             
-            zone.addEventListener('drop', (e) => {
+            zone.addEventListener('drop', async (e) => {
                 e.preventDefault();
                 zone.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0) handler(files);
+                
+                // Handle both file drops and folder drops
+                const items = e.dataTransfer.items;
+                if (items) {
+                    const files = await getAllFiles(items);
+                    if (files.length > 0) handler(files);
+                } else {
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) handler(files);
+                }
             });
             
             input.addEventListener('change', (e) => {
@@ -366,15 +590,34 @@
         }
 
         function handleFiles(files) {
-            // Check which file types are being uploaded
-            let hasJson = false;
-            let hasTxt = false;
+            // Filter to only JSON and TXT files
+            const jsonFiles = [];
+            const txtFiles = [];
             
             for (let file of files) {
                 const fileName = file.name.toLowerCase();
-                if (fileName.endsWith('.json')) hasJson = true;
-                if (fileName.endsWith('.txt')) hasTxt = true;
+                if (fileName.endsWith('.json')) {
+                    jsonFiles.push(file);
+                }
+                if (fileName.endsWith('.txt') || fileName.endsWith('.markers.txt')) {
+                    txtFiles.push(file);
+                }
             }
+            
+            
+            // Check which file types are being uploaded
+            let hasJson = jsonFiles.length > 0;
+            let hasTxt = txtFiles.length > 0;
+            
+            // BATCH MODE: If we have multiple JSON or TXT files, enter batch processing
+            if (jsonFiles.length > 1 || txtFiles.length > 1) {
+                processBatch(jsonFiles, txtFiles);
+                return;
+            }
+            
+            // SINGLE MODE: Process single session
+            // Hide batch results
+            document.getElementById('batchResults').classList.add('hidden');
             
             // Reset the phase that's not being uploaded
             if (hasJson && !hasTxt) {
@@ -396,14 +639,12 @@
                 document.getElementById('comparisonResults').classList.add('hidden');
             }
             
-            // Process the files
-            for (let file of files) {
-                const fileName = file.name.toLowerCase();
-                if (fileName.endsWith('.json')) {
-                    handleJsonFile(file);
-                } else if (fileName.endsWith('.txt')) {
-                    handleTxtFile(file);
-                }
+            // Process the files - only use first JSON and first TXT found
+            if (jsonFiles.length > 0) {
+                handleJsonFile(jsonFiles[0]);
+            }
+            if (txtFiles.length > 0) {
+                handleTxtFile(txtFiles[0]);
             }
         }
 
@@ -864,6 +1105,324 @@
                 setTimeout(drawConnectionArrows, 100);
             }
         });
+        
+        // BATCH PROCESSING
+        async function processBatch(jsonFiles, txtFiles) {
+            try {
+                
+                // Hide single session results
+                document.getElementById('results').classList.add('hidden');
+                document.getElementById('comparisonResults').classList.add('hidden');
+                
+                // Show batch results
+                document.getElementById('batchResults').classList.remove('hidden');
+                
+                
+                // Group files by session name
+                const sessions = {};
+                
+                // Process JSON files
+                for (const jsonFile of jsonFiles) {
+                    const path = jsonFile.webkitRelativePath || jsonFile.name;
+                    const sessionName = extractSessionName(path);
+                    if (!sessions[sessionName]) sessions[sessionName] = {};
+                    sessions[sessionName].jsonFile = jsonFile;
+                    sessions[sessionName].sessionName = sessionName;
+                    // Don't extract folder from JSON - it doesn't have the folder number
+                }
+                
+                // Process TXT files
+                for (const txtFile of txtFiles) {
+                    const path = txtFile.webkitRelativePath || txtFile.name;
+                    const sessionName = extractSessionName(path);
+                    const fullSessionName = txtFile.name.replace(/\.markers\.txt$/i, '').replace(/\.txt$/i, ''); // Full TXT filename without extension
+                    
+                    // Extract session type (t1lt2r or t2lt1r)
+                    const sessionTypeMatch = txtFile.name.match(/(t\d+lt\d+r)/i);
+                    const sessionType = sessionTypeMatch ? sessionTypeMatch[1].toLowerCase() : 'unknown';
+                    
+                    if (!sessions[sessionName]) sessions[sessionName] = {};
+                    sessions[sessionName].txtFile = txtFile;
+                    sessions[sessionName].sessionName = sessionName;
+                    sessions[sessionName].fullSessionName = fullSessionName;
+                    sessions[sessionName].sessionType = sessionType;
+                }
+                
+                
+                // Debug: show which sessions have both files
+                let matchedSessions = 0;
+                for (const sessionName in sessions) {
+                    const session = sessions[sessionName];
+                    const hasJson = !!session.jsonFile;
+                    const hasTxt = !!session.txtFile;
+                    if (hasJson && hasTxt) {
+                        matchedSessions++;
+                    } else {
+                    }
+                }
+                
+                // Process each session
+                const results = [];
+                let processedCount = 0;
+                for (const sessionName in sessions) {
+                    const session = sessions[sessionName];
+                    if (session.jsonFile && session.txtFile) {
+                        // Store session files for detailed view
+                        batchSessionData[sessionName] = {
+                            jsonFile: session.jsonFile,
+                            txtFile: session.txtFile
+                        };
+                        
+                        const result = await processSession(
+                            session.jsonFile, 
+                            session.txtFile, 
+                            sessionName, 
+                            session.fullSessionName,
+                            session.sessionType
+                        );
+                        results.push(result);
+                    }
+                }
+                
+                
+                // Display results
+                displayBatchResults(results);
+                
+            } catch (error) {
+                console.error('Error in batch processing:', error);
+                alert('Error processing batch: ' + error.message);
+            }
+        }
+        
+        function extractSessionName(filename) {
+            // JSON: "en-US_dualcharacter-e101.json"
+            // TXT: "enusisibar-enusisldra0052_t1lt2r-dualcharacter-e101.markers.txt"
+            // Common part: "dualcharacter-e101"
+            
+            // Get just the filename without path
+            let baseName = filename.split('/').pop().split('\\').pop();
+            
+            // Remove extensions
+            baseName = baseName.replace(/\.markers\.txt$/i, '');
+            baseName = baseName.replace(/\.txt$/i, '');
+            baseName = baseName.replace(/\.json$/i, '');
+            
+            // For TXT files, extract the part after the session type (t1lt2r or t2lt1r)
+            // Example: "enusisibar-enusisldra0052_t1lt2r-dualcharacter-e101" -> "dualcharacter-e101"
+            const sessionTypeMatch = baseName.match(/t\d+lt\d+r-(.+)$/i);
+            if (sessionTypeMatch) {
+                baseName = sessionTypeMatch[1];
+            }
+            
+            // For JSON files, remove the locale prefix
+            // Example: "en-US_dualcharacter-e101" -> "dualcharacter-e101"
+            baseName = baseName.replace(/^en[-_](US|GB|AU)[-_]/i, '');
+            
+            
+            return baseName;
+        }
+        
+        function extractFolderName(filepath) {
+            // Since webkitRelativePath is empty when dropping folders, 
+            // we need to extract the folder number from the TXT filename
+            // Example TXT: "engbbsehin-engbbshkoy0002_t1lt2r-dualcharacter-b032.markers.txt"
+            // The pattern is: [talents]NNNN_t1lt2r-[session].markers.txt
+            // where NNNN is the session/folder number like 0002
+            
+            const filename = filepath.split('/').pop().split('\\').pop();
+            
+            // Look for 4-digit number before the underscore and session type
+            const folderMatch = filename.match(/(\d{4})_t\d+lt\d+r/i);
+            if (folderMatch) {
+                // Remove leading zeros: "0002" -> "2"
+                const folderNum = parseInt(folderMatch[1], 10).toString();
+                return folderNum;
+            }
+            
+            // If no match, return Unknown
+            return 'Unknown';
+        }
+        
+        async function processSession(jsonFile, txtFile, sessionName, fullSessionName, sessionType) {
+            try {
+                // Read JSON file
+                const jsonText = await jsonFile.text();
+                const jsonData = JSON.parse(jsonText);
+                
+                // Read TXT file
+                const txtText = await txtFile.text();
+                
+                // Extract JSON talent info
+                const voiceAttributes = jsonData[0]?.voice_attributes || [];
+                const scenes = jsonData[1]?.scenes || [];
+                
+                let jsonTalent1 = '';
+                let jsonTalent2 = '';
+                let jsonFirstSpeaker = '';
+                
+                voiceAttributes.forEach(talentObj => {
+                    const talentKey = talentObj.key;
+                    const attributes = talentObj.value || [];
+                    let name = '';
+                    attributes.forEach(attr => {
+                        if (attr.key === 'name') name = attr.value;
+                    });
+                    const formatted = formatTalentName(name);
+                    if (talentKey === 'Talent1') jsonTalent1 = formatted;
+                    if (talentKey === 'Talent2') jsonTalent2 = formatted;
+                });
+                
+                if (scenes.length > 0 && scenes[0].turns && scenes[0].turns.length > 0) {
+                    jsonFirstSpeaker = scenes[0].turns[0].talent;
+                }
+                
+                // Extract TXT ProTools info
+                const lines = txtText.split('\n');
+                let leftTalent = '';
+                let rightTalent = '';
+                let protoolsFirstSpeaker = '';
+                
+                for (let line of lines) {
+                    if (line.includes('Left_Talent')) {
+                        const match = line.match(/[a-z]{10,}/i);
+                        if (match) leftTalent = match[0].toLowerCase().slice(-4);
+                    }
+                    if (line.includes('Right_Talent')) {
+                        const match = line.match(/[a-z]{10,}/i);
+                        if (match) rightTalent = match[0].toLowerCase().slice(-4);
+                    }
+                    if (line.includes('line0001')) {
+                        if (line.includes('Left_Talent')) protoolsFirstSpeaker = 'Left';
+                        else if (line.includes('Right_Talent')) protoolsFirstSpeaker = 'Right';
+                    }
+                    if (leftTalent && rightTalent && protoolsFirstSpeaker) break;
+                }
+                
+                // Check matches
+                const talent1First = jsonTalent1.localeCompare(jsonTalent2) < 0;
+                let namesMatch = false;
+                if (talent1First) {
+                    namesMatch = (jsonTalent1 === leftTalent && jsonTalent2 === rightTalent);
+                } else {
+                    namesMatch = (jsonTalent2 === leftTalent && jsonTalent1 === rightTalent);
+                }
+                
+                let jsonFirstTalent = '';
+                if (jsonFirstSpeaker === 'Talent1') jsonFirstTalent = 'Talent1';
+                else if (jsonFirstSpeaker === 'Talent2') jsonFirstTalent = 'Talent2';
+                
+                let protoolsFirstTalent = '';
+                if (protoolsFirstSpeaker === 'Left') {
+                    if (jsonTalent1 === leftTalent) protoolsFirstTalent = 'Talent1';
+                    else if (jsonTalent2 === leftTalent) protoolsFirstTalent = 'Talent2';
+                } else if (protoolsFirstSpeaker === 'Right') {
+                    if (jsonTalent1 === rightTalent) protoolsFirstTalent = 'Talent1';
+                    else if (jsonTalent2 === rightTalent) protoolsFirstTalent = 'Talent2';
+                }
+                
+                const firstTurnMatch = jsonFirstTalent === protoolsFirstTalent;
+                
+                // Session type check
+                const configMatch = txtFile.name.match(/(t\d+lt\d+r)/i);
+                const sessionConfig = configMatch ? configMatch[1].toLowerCase() : 'unknown';
+                
+                let actualSessionType = '';
+                if (protoolsFirstSpeaker === 'Left') actualSessionType = 't1lt2r';
+                else if (protoolsFirstSpeaker === 'Right') actualSessionType = 't2lt1r';
+                
+                const sessionTypeMatch = actualSessionType === sessionConfig;
+                
+                return {
+                    fullSessionName,
+                    sessionType,
+                    sessionName,
+                    namesMatch,
+                    firstTurnMatch,
+                    sessionTypeMatch,
+                    allPass: namesMatch && firstTurnMatch && sessionTypeMatch
+                };
+                
+            } catch (error) {
+                return {
+                    fullSessionName,
+                    sessionType,
+                    sessionName,
+                    namesMatch: false,
+                    firstTurnMatch: false,
+                    sessionTypeMatch: false,
+                    allPass: false,
+                    error: error.message
+                };
+            }
+        }
+        
+        function displayBatchResults(results) {
+            const totalSessions = results.length;
+            const passedSessions = results.filter(r => r.allPass).length;
+            const failedSessions = totalSessions - passedSessions;
+            
+            // Update summary
+            document.getElementById('batchSummary').innerHTML = `
+                <div class="batch-summary-stats">
+                    <div class="batch-stat">Total Sessions: <strong>${totalSessions}</strong></div>
+                    <div class="batch-stat pass">Passed: <strong>${passedSessions}</strong></div>
+                    <div class="batch-stat fail">Failed: <strong>${failedSessions}</strong></div>
+                </div>
+            `;
+            
+            // Build table
+            let tableHTML = '';
+            results.forEach(result => {
+                const statusClass = result.allPass ? 'pass' : 'fail';
+                const statusText = result.allPass ? 'PASS' : 'FAIL';
+                
+                tableHTML += `
+                    <tr class="clickable-row" onclick="loadSessionDetails('${result.sessionName}')">
+                        <td style="text-align: left;"><span class="session-name">${result.fullSessionName || result.sessionName}</span></td>
+                        <td><span class="batch-status-badge ${result.namesMatch ? 'pass' : 'fail'}">${result.namesMatch ? '✓' : '✗'}</span></td>
+                        <td><span class="batch-status-badge ${result.firstTurnMatch ? 'pass' : 'fail'}">${result.firstTurnMatch ? '✓' : '✗'}</span></td>
+                        <td><span class="batch-status-badge ${result.sessionTypeMatch ? 'pass' : 'fail'}">${result.sessionTypeMatch ? '✓' : '✗'}</span></td>
+                        <td><span class="batch-status-badge ${statusClass}">${statusText}</span></td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('batchTableBody').innerHTML = tableHTML;
+        }
+        
+        // Load detailed view for a specific session
+        async function loadSessionDetails(sessionName) {
+            const sessionData = batchSessionData[sessionName];
+            if (!sessionData) {
+                alert('Session data not found');
+                return;
+            }
+            
+            // Hide batch results
+            document.getElementById('batchResults').classList.add('hidden');
+            
+            // Show back button
+            document.getElementById('backButton').classList.remove('hidden');
+            
+            // Show single session results
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('comparisonResults').classList.remove('hidden');
+            
+            // Process the session files to display detailed view
+            await handleJsonFile(sessionData.jsonFile);
+            await handleTxtFile(sessionData.txtFile);
+        }
+        
+        // Go back to batch results
+        function backToBatchResults() {
+            // Hide single session view and back button
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('comparisonResults').classList.add('hidden');
+            document.getElementById('backButton').classList.add('hidden');
+            
+            // Show batch results
+            document.getElementById('batchResults').classList.remove('hidden');
+        }
     </script>
 </body>
 </html>
