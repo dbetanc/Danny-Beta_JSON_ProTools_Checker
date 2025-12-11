@@ -524,6 +524,8 @@
                 if (item.isFile) {
                     return new Promise((resolve) => {
                         item.file((file) => {
+                            // Add the path as a property so we can use it later
+                            file.folderPath = path;
                             files.push(file);
                             resolve();
                         });
@@ -531,22 +533,37 @@
                 } else if (item.isDirectory) {
                     const dirReader = item.createReader();
                     return new Promise((resolve) => {
-                        dirReader.readEntries(async (entries) => {
-                            for (const entry of entries) {
-                                await traverseFileTree(entry, path + item.name + '/');
-                            }
-                            resolve();
-                        });
+                        const readEntries = () => {
+                            dirReader.readEntries(async (entries) => {
+                                if (entries.length === 0) {
+                                    // No more entries, done with this directory
+                                    resolve();
+                                } else {
+                                    // Process these entries
+                                    for (const entry of entries) {
+                                        await traverseFileTree(entry, path + item.name + '/');
+                                    }
+                                    // Read more entries (directories can have more than 100 entries)
+                                    readEntries();
+                                }
+                            });
+                        };
+                        readEntries();
                     });
                 }
             }
             
+            // Process all dropped items in parallel
+            const promises = [];
             for (let i = 0; i < dataTransferItems.length; i++) {
                 const item = dataTransferItems[i].webkitGetAsEntry();
                 if (item) {
-                    await traverseFileTree(item);
+                    promises.push(traverseFileTree(item));
                 }
             }
+            
+            // Wait for all items to be processed
+            await Promise.all(promises);
             
             return files;
         }
@@ -1146,7 +1163,7 @@
                 
                 // Process JSON files
                 for (const jsonFile of jsonFiles) {
-                    const path = jsonFile.webkitRelativePath || jsonFile.name;
+                    const path = jsonFile.folderPath ? (jsonFile.folderPath + jsonFile.name) : (jsonFile.webkitRelativePath || jsonFile.name);
                     const sessionName = extractSessionName(path);
                     if (!sessions[sessionName]) sessions[sessionName] = {};
                     sessions[sessionName].jsonFile = jsonFile;
@@ -1156,7 +1173,7 @@
                 
                 // Process TXT files
                 for (const txtFile of txtFiles) {
-                    const path = txtFile.webkitRelativePath || txtFile.name;
+                    const path = txtFile.folderPath ? (txtFile.folderPath + txtFile.name) : (txtFile.webkitRelativePath || txtFile.name);
                     const sessionName = extractSessionName(path);
                     const fullSessionName = txtFile.name.replace(/\.markers\.txt$/i, '').replace(/\.txt$/i, ''); // Full TXT filename without extension
                     
