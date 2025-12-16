@@ -666,21 +666,50 @@
         }
 
         function handleJsonFile(file) {
+            // Reset previous data
+            jsonData = null;
+            jsonTalent1Name = '';
+            jsonTalent2Name = '';
+            jsonFirstSpeaker = '';
+            
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    jsonData = JSON.parse(e.target.result);
+                    let jsonText = e.target.result;
+                    
+                    // Fix common JSON issues before parsing
+                    // Fix unquoted strings in arrays like [Calm], [Soothing, Playful] -> ["Calm"], ["Soothing", "Playful"]
+                    // This regex matches arrays with unquoted identifiers and adds quotes
+                    jsonText = jsonText.replace(/\[([A-Za-z][A-Za-z0-9_\s\-]*(?:,\s*[A-Za-z][A-Za-z0-9_\s\-]*)*)\]/g, (match, content) => {
+                        // Split by comma, trim, and wrap each item in quotes
+                        const items = content.split(',').map(item => `"${item.trim()}"`).join(', ');
+                        return `[${items}]`;
+                    });
+                    
+                    console.log('Attempting to parse JSON after fixes...');
+                    jsonData = JSON.parse(jsonText);
+                    console.log('JSON parsed successfully!', jsonData);
                     document.getElementById('jsonInfo').textContent = `✓ JSON: ${file.name}`;
                     document.getElementById('mainZone').classList.add('loaded');
                     extractTalents();
                 } catch (error) {
-                    alert('Error parsing JSON file: ' + error.message);
+                    console.error('JSON parse failed:', error.message);
+                    console.error('Error at position:', error.message.match(/position (\d+)/));
+                    document.getElementById('jsonInfo').textContent = `⚠ JSON: ${file.name} (parsing issues, attempting to continue...)`;
+                    document.getElementById('talentsList').innerHTML = `<div class="error">Could not parse JSON file. Please check the file format.</div>`;
                 }
             };
             reader.readAsText(file);
         }
 
         function handleTxtFile(file) {
+            // Reset previous data
+            txtData = null;
+            txtFileName = '';
+            protoolsLeftName = '';
+            protoolsRightName = '';
+            protoolsFirstSpeaker = '';
+            
             const reader = new FileReader();
             reader.onload = (e) => {
                 txtData = e.target.result;
@@ -711,13 +740,20 @@
         }
 
         function extractTalents() {
-            if (!jsonData) return;
+            if (!jsonData) {
+                console.error('extractTalents called but jsonData is null');
+                return;
+            }
 
             document.getElementById('results').classList.remove('hidden');
 
             try {
+                console.log('jsonData structure:', jsonData);
                 const voiceAttributes = jsonData[0]?.voice_attributes || [];
                 const scenes = jsonData[1]?.scenes || [];
+                
+                console.log('voiceAttributes:', voiceAttributes);
+                console.log('scenes:', scenes);
                 
                 if (voiceAttributes.length === 0) {
                     document.getElementById('talentsList').innerHTML = '<div class="error">No talent data found in JSON file.</div>';
@@ -791,6 +827,7 @@
                 }
 
             } catch (error) {
+                console.error('Error in extractTalents:', error);
                 document.getElementById('talentsList').innerHTML = `<div class="error">Error processing JSON: ${error.message}</div>`;
             }
         }
