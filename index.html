@@ -851,20 +851,26 @@
                 for (let line of lines) {
                     if (line.includes('Left_Talent')) {
                         leftTrack = line.split('\t').find(part => part.includes('Left_Talent')) || '';
-                        // Extract talent code - match pattern like "enusslgflo" and take last 4 chars
-                        const match = leftTrack.match(/[a-z]{10,}/i);
+                        // Extract talent code from pattern: "Left_Talent 1_engblycli_1027_dualcharacter"
+                        // Format: [2 lang][2 location][2 studio][3-4 talent initials]
+                        // The talent code is between the first underscore and second underscore
+                        const match = leftTrack.match(/_([a-z]{6,12})_/i);
                         if (match) {
-                            leftFullName = match[0].toLowerCase();
-                            leftTalent = leftFullName.slice(-4); // Get last 4 characters
+                            leftFullName = match[1].toLowerCase();
+                            // Skip first 6 characters (lang+location+studio), get remaining 3-4 for talent initials
+                            leftTalent = leftFullName.substring(6).toLowerCase(); // Get characters after position 6
                         }
                     }
                     if (line.includes('Right_Talent')) {
                         rightTrack = line.split('\t').find(part => part.includes('Right_Talent')) || '';
-                        // Extract talent code - match pattern like "enussllrue" and take last 4 chars
-                        const match = rightTrack.match(/[a-z]{10,}/i);
+                        // Extract talent code from pattern: "Right_Talent 2_engblymjan_1027_dualcharacter"
+                        // Format: [2 lang][2 location][2 studio][3-4 talent initials]
+                        // The talent code is between the first underscore and second underscore
+                        const match = rightTrack.match(/_([a-z]{6,12})_/i);
                         if (match) {
-                            rightFullName = match[0].toLowerCase();
-                            rightTalent = rightFullName.slice(-4); // Get last 4 characters
+                            rightFullName = match[1].toLowerCase();
+                            // Skip first 6 characters (lang+location+studio), get remaining 3-4 for talent initials
+                            rightTalent = rightFullName.substring(6).toLowerCase(); // Get characters after position 6
                         }
                     }
                     
