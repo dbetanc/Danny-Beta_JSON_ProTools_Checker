@@ -617,6 +617,10 @@
         let protoolsLeftName = '';
         let protoolsRightName = '';
         
+        // Scene count tracking
+        let jsonSceneCount = 0;
+        let txtSceneCount = 0;
+        
         // Store batch session data for detailed view
         let batchSessionData = {};
         
@@ -885,6 +889,9 @@
                 const voiceAttributes = jsonData[0]?.voice_attributes || [];
                 const scenes = jsonData[1]?.scenes || [];
                 
+                // Count JSON scenes
+                jsonSceneCount = scenes.length;
+                
                 if (voiceAttributes.length === 0) {
                     document.getElementById('talentsList').innerHTML = '<div class="error">No talent data found in JSON file.</div>';
                     return;
@@ -976,6 +983,16 @@
                 let leftFullName = '';
                 let rightFullName = '';
                 let firstSpeakerTrack = ''; // Will be 'Left' or 'Right'
+                
+                // Count scenes in TXT (scene01, scene02, etc.)
+                const sceneSet = new Set();
+                for (let line of lines) {
+                    const sceneMatch = line.match(/\bscene(\d+)\b/i);
+                    if (sceneMatch) {
+                        sceneSet.add(parseInt(sceneMatch[1]));
+                    }
+                }
+                txtSceneCount = sceneSet.size;
 
                 // Find lines with track names
                 for (let line of lines) {
@@ -1232,6 +1249,27 @@
                         </div>
                     </div>
                 `;
+                
+                // Add scene count comparison if both counts are available
+                const sceneCountMatch = jsonSceneCount === txtSceneCount;
+                if (jsonSceneCount > 0 || txtSceneCount > 0) {
+                    comparisonHTML += `
+                        <div class="comparison-card ${sceneCountMatch ? 'match' : 'no-match'}">
+                            <div class="talent-row">
+                                <div class="talent-label">Scene Count Match:</div>
+                                <span class="status-badge ${sceneCountMatch ? 'success' : 'error'}">
+                                    ${sceneCountMatch ? '✅ MATCH' : '❌ NO MATCH'}
+                                </span>
+                            </div>
+                            <div class="talent-row" style="margin-top: 10px;">
+                                <div class="talent-detail">
+                                    JSON: ${jsonSceneCount} scenes | ProTools TXT: ${txtSceneCount} scenes
+                                    ${sceneCountMatch ? ' ✓ Scene counts match' : ` ✗ Difference of ${Math.abs(jsonSceneCount - txtSceneCount)} scene(s)`}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
                 
                 document.getElementById('comparisonContent').innerHTML = comparisonHTML;
                 
